@@ -12,7 +12,7 @@ def add_default_args(parser):
     # mode select
     modes = parser.add_argument_group('Modes')
     modes.add_argument('--run_mode', type=str, choices=['train', 'test'],
-                       help='Select running mode. ')
+                       help='Select running mode.')
     modes.add_argument('--dataset_class', type=str, choices=['openkp', 'kp20k'],
                        help='Select datasets.')
     modes.add_argument('--model_class', type=str, 
@@ -24,9 +24,9 @@ def add_default_args(parser):
     # ---------------------------------------------------------------------------------------------
     # Filesystem
     files = parser.add_argument_group('Files')
-    files.add_argument('--preprocess_folder', type=str, required=True,
+    files.add_argument('--preprocess_folder', type=str,
                        help='Directory of preprocess data.')
-    files.add_argument("--pretrain_model_path", type=str, required=True,
+    files.add_argument("--pretrain_model_path", type=str,
                        help="Path to pre-trained BERT model.")
     files.add_argument("--save_path", type=str, default='../results',
                        help="Path to save log files, checkpoint and prediction results.")
@@ -146,6 +146,7 @@ def init_args_config(args):
     args.log_file = os.path.join(args.save_folder, 'logging.txt')
     logger = logging.getLogger() 
     logger.setLevel(logging.INFO) # logger.setLevel(logging.DEBUG)
+    # logger.propagate = False
     fmt = logging.Formatter('%(asctime)s: [ %(message)s ]', '%m/%d/%Y %I:%M:%S %p')
     
     console = logging.StreamHandler() 
@@ -155,6 +156,6 @@ def init_args_config(args):
         logfile = logging.FileHandler(args.log_file, 'w')
         logfile.setFormatter(fmt)
         logger.addHandler(logfile)
-    logger.info('COMMAND: %s' % ' '.join(sys.argv))
-    logger.info("preprocess_folder = {}".format(args.preprocess_folder))
-    logger.info("Pretrain Model Type = {}".format(args.pretrain_model_type))
+    # logger.info('COMMAND: %s' % ' '.join(sys.argv))
+    # logger.info("preprocess_folder = {}".format(args.preprocess_folder))
+    # logger.info("Pretrain Model Type = {}".format(args.pretrain_model_type))

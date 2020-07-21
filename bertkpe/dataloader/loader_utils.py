@@ -42,7 +42,7 @@ def load_dataset(file_path):
         for idx, line in enumerate(tqdm(fi)):
             jsonl = json.loads(line)
             data_list.append(jsonl)
-    logger.info('success load %d data'%len(data_list))
+    # logger.info('success load %d data'%len(data_list))
     return data_list
 
 
@@ -60,35 +60,17 @@ def save_dataset(data_list, filename):
 class build_dataset(Dataset):
     ''' build datasets for train & eval '''
     def __init__(self, args, tokenizer, mode):
-        
         pretrain_model = 'bert' if 'roberta' not in args.pretrain_model_type else 'roberta'
         # --------------------------------------------------------------------------------------------
-        # try to reload cached features
-        try:
-            cached_examples = reload_cached_features(**{'cached_features_dir':args.cached_features_dir,
-                                                        'model_class':args.model_class,
-                                                        'dataset_class':args.dataset_class, 
-                                                        'pretrain_model':pretrain_model,
-                                                        'mode':mode})
-        # --------------------------------------------------------------------------------------------
-        # restart preprocessing features
-        except:
-            logger.info("start loading source %s %s data ..." %(args.dataset_class, mode))            
-            examples = load_dataset(os.path.join(args.preprocess_folder, "%s.%s.json" % (args.dataset_class, mode)))
-            cached_examples = example_preprocessor[args.model_class](**{'examples':examples, 
-                                                                        'tokenizer':tokenizer, 
-                                                                        'max_token':args.max_token,
-                                                                        'pretrain_model':pretrain_model, 
-                                                                        'mode':mode,
-                                                                        'max_phrase_words':args.max_phrase_words,
-                                                                        'stem_flag':True if args.dataset_class == 'kp20k' else False})
-            if args.local_rank in [-1, 0]:
-                save_cached_features(**{'cached_examples':cached_examples, 
-                                        'cached_features_dir':args.cached_features_dir, 
-                                        'model_class':args.model_class, 
-                                        'dataset_class':args.dataset_class, 
-                                        'pretrain_model':pretrain_model,
-                                        'mode':mode})
+        # logger.info("start loading source %s %s data ..." %(args.dataset_class, mode))            
+        examples = args.example
+        cached_examples = example_preprocessor[args.model_class](**{'examples':examples, 
+                                                                    'tokenizer':tokenizer, 
+                                                                    'max_token':args.max_token,
+                                                                    'pretrain_model':pretrain_model, 
+                                                                    'mode':mode,
+                                                                    'max_phrase_words':args.max_phrase_words,
+                                                                    'stem_flag':True if args.dataset_class == 'kp20k' else False})
         # --------------------------------------------------------------------------------------------
         self.mode = mode
         self.tokenizer = tokenizer

@@ -13,17 +13,16 @@ from tqdm import tqdm
 
 sys.path.append("..")
 
-import config
-import utils
-from utils import pred_arranger, pred_saver
+from scripts import config, utils
+from scripts.utils import pred_arranger, pred_saver
 
 from bertkpe import tokenizer_class, Idx2Tag, Tag2Idx, Decode_Candidate_Number
 from bertkpe import dataloader, generator, evaluator
-from model import KeyphraseSpanExtraction
+from scripts.model import KeyphraseSpanExtraction
 
 torch.backends.cudnn.benchmark=True
 from torch.utils.data.distributed import DistributedSampler
-from tensorboardX import SummaryWriter
+# from tensorboardX import SummaryWriter
 logger = logging.getLogger()
 
 # -------------------------------------------------------------------------------------------
@@ -45,13 +44,13 @@ def select_decoder(name):
 # bert2span
 def bert2span_decoder(args, data_loader, dataset, model, test_input_refactor, 
                       pred_arranger, mode, stem_flag=False):
-    logging.info('Start Generating Keyphrases for %s ... \n'%mode)
+    # logging.info('Start Generating Keyphrases for %s ... \n'%mode)
     test_time = utils.Timer()
     if args.dataset_class == "kp20k":stem_flag = True
 
     tot_examples = 0
     tot_predictions = []
-    for step, batch in enumerate(tqdm(data_loader)):
+    for step, batch in enumerate(data_loader):
         inputs, indices, lengths = test_input_refactor(batch, model.args.device)
         try:
             start_lists, end_lists = model.test_bert2span(inputs, lengths)
@@ -143,13 +142,13 @@ def bert2chunk_decoder(args, data_loader, dataset, model, test_input_refactor,
 # Bert2Rank & Bert2Joint
 def bert2rank_decoder(args, data_loader, dataset, model, test_input_refactor, 
                       pred_arranger, mode, stem_flag=False):
-    logging.info('Start Generating Keyphrases for %s ... \n'%mode)
+    # logging.info('Start Generating Keyphrases for %s ... \n'%mode)
     test_time = utils.Timer()
     if args.dataset_class == "kp20k":stem_flag = True
 
     tot_examples = 0
     tot_predictions = []
-    for step, batch in enumerate(tqdm(data_loader)):
+    for step, batch in enumerate(data_loader):
         inputs, indices, lengths = test_input_refactor(batch, model.args.device)    
         try:
             logit_lists = model.test_bert2rank(inputs, lengths)
@@ -203,12 +202,12 @@ if __name__ == "__main__":
         torch.distributed.init_process_group(backend='nccl')
         args.n_gpu = 1
     args.device = device
-    logger.info("Process rank: %s, device: %s, n_gpu: %s, distributed training: %s, 16-bits training: %s",
-                args.local_rank, device, args.n_gpu, bool(args.local_rank != -1), args.fp16)
+    # logger.info("Process rank: %s, device: %s, n_gpu: %s, distributed training: %s, 16-bits training: %s",
+    #             args.local_rank, device, args.n_gpu, bool(args.local_rank != -1), args.fp16)
 
     # -------------------------------------------------------------------------------------------
     # init tokenizer & Converter 
-    logger.info("start setting tokenizer, dataset and dataloader (local_rank = {})... ".format(args.local_rank))
+    # logger.info("start setting tokenizer, dataset and dataloader (local_rank = {})... ".format(args.local_rank))
     tokenizer = tokenizer_class[args.pretrain_model_type].from_pretrained(args.cache_dir)
     
     # -------------------------------------------------------------------------------------------
@@ -246,7 +245,7 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------------------------
     # Preprare Model & Optimizer
     # -------------------------------------------------------------------------------------------
-    logger.info(" ************************** Initilize Model ************************** ")
+    # logger.info(" ************************** Initilize Model ************************** ")
     try:
         model, checkpoint_epoch = KeyphraseSpanExtraction.load_checkpoint(args.eval_checkpoint, args)
         model.set_device()
@@ -266,7 +265,7 @@ if __name__ == "__main__":
     # Method Select
     # -------------------------------------------------------------------------------------------
     candidate_decoder = select_decoder(args.model_class)
-    evaluate_script, main_metric_name = utils.select_eval_script(args.dataset_class)
+    # evaluate_script, main_metric_name = utils.select_eval_script(args.dataset_class)
     _, test_input_refactor = utils.select_input_refactor(args.model_class)
 
     # ------------------------------------------------------------------------------------------

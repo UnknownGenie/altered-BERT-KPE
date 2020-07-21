@@ -48,7 +48,7 @@ def refactor_text_vdom(text, VDOM):
                 new_word2block.append(bi)
             else:
                 new_word2block.append(-1)
-                logger.info('Error ! the word not found in block')
+                # logger.info('Error ! the word not found in block')
                 
     assert len(doc_words) == len(new_word2block)
     return doc_words, new_word2block, block_features

@@ -11,7 +11,7 @@ import argparse
 import unicodedata
 import numpy as np
 from tqdm import tqdm
-import prepro_utils
+from preprocess import prepro_utils
 
 dataset_dict = {'openkp':[('EvalPublic', 'eval'), ('Dev', 'dev'), ('Train', 'train')], 
                 'kp20k':[('testing', 'eval'), ('validation', 'dev'), ('training', 'train')]}
@@ -22,12 +22,12 @@ logger = logging.getLogger()
 # config param
 def add_preprocess_opts(parser):
     
-    parser.add_argument("--dataset_class", type=str, choices=['openkp', 'kp20k'],
-                       help="Select dataset to be preprocessed. ")
-    parser.add_argument('--source_dataset_dir', type=str, required=True,
-                        help="The path to the source dataset (raw json).")
-    parser.add_argument('--output_path', type=str, required=True,
-                        help="The path to save preprocess data")
+    # parser.add_argument("--dataset_class", type=str, choices=['openkp', 'kp20k'],
+    #                    help="Select dataset to be preprocessed. ")
+    # parser.add_argument('--source_dataset_dir', type=str, required=True,
+    #                     help="The path to the source dataset (raw json).")
+    # parser.add_argument('--output_path', type=str, required=True,
+    #                     help="The path to save preprocess data")
     # ------------------------------------------------------------------
     # specific for kp20k
     parser.add_argument('-max_src_seq_length', type=int, default=300,
@@ -72,39 +72,38 @@ def openkp_loader(mode, source_dataset_dir):
     return data_pairs
 
 
-def kp20k_loader(mode, source_dataset_dir, 
-                 src_fields = ['title', 'abstract'], 
+def kp20k_loader(dataset, src_fields = ['context'], 
                  trg_fields = ['keyword'], trg_delimiter=';'):
     
     ''' load source Kp20k dataset :'title', 'abstract', 'keyword' 
     return : tuple : src_string, trg_string'''
     
-    logger.info("start loading %s data ..." % mode)
-    source_path = os.path.join(source_dataset_dir, 'kp20k_%s.json' % mode)
+    # logger.info("start loading %s data ..." % mode)
+    # source_path = os.path.join(source_dataset_dir, 'kp20k_%s.json' % mode)
     
     data_pairs = []
-    with codecs.open(source_path, "r", "utf-8") as corpus_file:
-        for idx, line in enumerate(tqdm(corpus_file)):
-            json_ = json.loads(line)
-            
-            trg_strs = []
-            src_str = '.'.join([json_[f] for f in src_fields])
-            [trg_strs.extend(re.split(trg_delimiter, json_[f])) for f in trg_fields]
-            data_pairs.append((src_str, trg_strs))
+    # with codecs.open(source_path, "r", "utf-8") as corpus_file:
+    for idx, line in enumerate(dataset):
+        json_ = line
+        
+        trg_strs = []
+        src_str = '.'.join([json_[f] for f in src_fields])
+        [trg_strs.extend(re.split(trg_delimiter, json_[f])) for f in trg_fields]
+        data_pairs.append((src_str, trg_strs))
     return data_pairs
 
 # -------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------
 # first stage preprocess
 def openkp_refactor(examples, mode):
-    logger.info('strat refactor openkp %s data ...'%mode)
+    # logger.info('strat refactor openkp %s data ...'%mode)
     
     have_phrase = True
     if mode == 'EvalPublic':
         have_phrase = False
     
     return_pairs = []
-    for idx, ex in enumerate(tqdm(examples)):
+    for idx, ex in enumerate(examples):
         doc_words, word2block, block_features = prepro_utils.refactor_text_vdom(text=ex['text'], 
                                                                                 VDOM=ex['VDOM'])
         data = {}
@@ -120,8 +119,8 @@ def openkp_refactor(examples, mode):
     return return_pairs
 
 
-def kp20k_refactor(src_trgs_pairs, mode, valid_check=True):
-    logger.info("start refactor kp20k %s data ..." % mode)
+def kp20k_refactor(src_trgs_pairs, mode, opt, valid_check=False):
+    # logger.info("start refactor kp20k %s data ..." % mode)
 
     def tokenize_fn(text):
         '''
@@ -145,7 +144,7 @@ def kp20k_refactor(src_trgs_pairs, mode, valid_check=True):
 
     # ---------------------------------------------------------------------------------------
     return_pairs = []
-    for idx, (src, trgs) in enumerate(tqdm(src_trgs_pairs)):
+    for idx, (src, trgs) in enumerate(src_trgs_pairs):
         src_filter_flag = False
 
         src_tokens = tokenize_fn(src)
@@ -155,7 +154,7 @@ def kp20k_refactor(src_trgs_pairs, mode, valid_check=True):
             src_filter_flag = True
         if opt.min_src_seq_length and len(src_tokens) < opt.min_src_seq_length:
             src_filter_flag = True
-
+        
         if valid_check and src_filter_flag:
             continue
 
@@ -179,9 +178,9 @@ def kp20k_refactor(src_trgs_pairs, mode, valid_check=True):
                 # Find punctuations in keyword: %s' % trg
 
             # FILTER 3.2: if length of trg exceeds limit, discard
-            if opt.max_trg_seq_length and len(trg_tokens) > opt.max_trg_seq_length:
+            if 6 and len(trg_tokens) > 6:
                 trg_filter_flag = True
-            if opt.min_trg_seq_length and len(trg_tokens) < opt.min_trg_seq_length:
+            if 0 and len(trg_tokens) < 0:
                 trg_filter_flag = True
 
             filtered_by_heuristic_rule = False
@@ -252,21 +251,21 @@ def filter_openkp_absent(examples):
 
 
 def filter_kp20k_absent(examples):
-    logger.info('strat filter absent keyphrases for KP20k...')
+    # logger.info('strat filter absent keyphrases for KP20k...')
     data_list = []
     
     null_ids, absent_ids = 0, 0
     
     url = 0
-    for idx, ex in enumerate(tqdm(examples)):
+    for idx, ex in enumerate(examples):
         
         lower_words = [t.lower() for t in ex['doc_words']]
         present_phrases = prepro_utils.find_stem_answer(word_list=lower_words, ans_list=ex['keyphrases'])
-        if present_phrases is None:
-            null_ids += 1
-            continue
-        if len(present_phrases['keyphrases']) != len(ex['keyphrases']):
-            absent_ids += 1
+        # if present_phrases is None:
+        #     null_ids += 1
+        #     continue
+        # if len(present_phrases['keyphrases']) != len(ex['keyphrases']):
+        #     absent_ids += 1
             
         data = {}
         data['url'] = url
@@ -277,8 +276,8 @@ def filter_kp20k_absent(examples):
         data_list.append(data)
         url += 1
         
-    logger.info('Null : number = {} '.format(null_ids))
-    logger.info('Absent : number = {} '.format(absent_ids))
+    # logger.info('Null : number = {} '.format(null_ids))
+    # logger.info('Absent : number = {} '.format(absent_ids))
     return data_list
 
 
@@ -307,31 +306,30 @@ def save_preprocess_data(data_list, filename):
 # -------------------------------------------------------------------------------------
 # main function
 def main_preprocess(opt, input_mode, save_mode):
-    
+    data_loader = {'openkp':openkp_loader, 'kp20k':kp20k_loader}
+    data_refactor = {'openkp':openkp_refactor, 'kp20k':kp20k_refactor}
+    absent_filter = {'openkp':filter_openkp_absent, 'kp20k':filter_kp20k_absent}
+
     # load source dataset
-    source_data = data_loader[opt.dataset_class](input_mode, opt.source_dataset_dir)
-    logger.info("success loaded %s %s data : %d " % (opt.dataset_class, input_mode, len(source_data)))
-
+    source_data = data_loader[opt.dataset_class](opt.dataset)
+    
     # refactor source data
-    refactor_data = data_refactor[opt.dataset_class](source_data, input_mode)
-    logger.info('success refactor %s source data !' % input_mode)
-
+    refactor_data = data_refactor[opt.dataset_class](source_data, input_mode, opt)
+    
     # filter absent keyphrases (kp20k use stem)
     if opt.dataset_class == 'openkp' and input_mode == 'EvalPublic':
         feed_data = refactor_data
     else:
         feed_data = absent_filter[opt.dataset_class](refactor_data)
-        logger.info('success obtain %s present keyphrase : %d (filter out : %d)'
-                    %(input_mode, len(feed_data), (len(refactor_data) - len(feed_data))))
+    return feed_data
+    # # save ground-truth
+    # gt_filename = os.path.join(opt.output_path, "%s.%s_candidate.json"%(opt.dataset_class, save_mode))
+    # if opt.dataset_class == 'kp20k' and save_mode != 'train':
+    #     save_ground_truths(feed_data, gt_filename, kp_key='keyphrases')
         
-    # save ground-truth
-    gt_filename = os.path.join(opt.output_path, "%s.%s_candidate.json"%(opt.dataset_class, save_mode))
-    if opt.dataset_class == 'kp20k' and save_mode != 'train':
-        save_ground_truths(feed_data, gt_filename, kp_key='keyphrases')
-        
-    # openkp dev ground-truth keyphrases
-    if opt.dataset_class == 'openkp' and save_mode == 'dev':
-        save_ground_truths(source_data, gt_filename, kp_key='KeyPhrases')
+    # # openkp dev ground-truth keyphrases
+    # if opt.dataset_class == 'openkp' and save_mode == 'dev':
+    #     save_ground_truths(source_data, gt_filename, kp_key='KeyPhrases')
     
     # -------------------------------------------------------------------------------------
     # save preprocess features

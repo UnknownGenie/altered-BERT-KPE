@@ -165,11 +165,11 @@ def get_ngram_info_label(doc_words, max_phrase_words, stem_flag, keyphrases=None
 # -------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------
 def bert2joint_preprocessor(examples, tokenizer, max_token, pretrain_model, mode, max_phrase_words, stem_flag=False):
-    logger.info('start preparing (%s) features for bert2joint (%s) ...' % (mode, pretrain_model))
+    # logger.info('start preparing (%s) features for bert2joint (%s) ...' % (mode, pretrain_model))
     
     overlen_num = 0
     new_examples = []    
-    for idx, ex in enumerate(tqdm(examples)):
+    for idx, ex in enumerate(examples):
         
         # tokenize
         tokenize_output = loader_utils.tokenize_for_bert(doc_words=ex['doc_words'], tokenizer=tokenizer)
@@ -213,8 +213,8 @@ def bert2joint_preprocessor(examples, tokenizer, max_token, pretrain_model, mode
         # ---------------------------------------------------------------------------
         new_examples.append(new_ex)
         
-    logger.info('Delete Overlen Keyphrase (length > 5): %d (overlen / total = %.2f' 
-                %(overlen_num, float(overlen_num / len(examples) * 100)) + '%)')
+    # logger.info('Delete Overlen Keyphrase (length > 5): %d (overlen / total = %.2f' 
+    #             %(overlen_num, float(overlen_num / len(examples) * 100)) + '%)')
     return new_examples
 
     

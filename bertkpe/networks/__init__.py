@@ -1,5 +1,4 @@
 def get_class(args):
-    
     # Bert2Span
     if args.model_class == 'bert2span' and args.pretrain_model_type in ['bert-base-cased', 'spanbert-base-cased']:
         return BertForAttSpanExtractor

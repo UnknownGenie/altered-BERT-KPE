@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from torch import nn
 import torch.nn.functional as F
-from utils import override_args
+from scripts.utils import override_args
 from bertkpe import Idx2Tag, networks, generator, config_class
 from bertkpe.transformers import AdamW, WarmupLinearSchedule
 logger = logging.getLogger()
@@ -22,7 +22,7 @@ class KeyphraseSpanExtraction(object):
         
         # select config
         args.num_labels = 2 if args.model_class != 'bert2tag' else len(Idx2Tag)
-        logger.info('Config num_labels = %d' %args.num_labels)
+        # logger.info('Config num_labels = %d' %args.num_labels)
         model_config = config_class[args.pretrain_model_type].from_pretrained(args.cache_dir, num_labels=args.num_labels)
         
         # load pretrained model
@@ -31,7 +31,7 @@ class KeyphraseSpanExtraction(object):
         # load checkpoint
         if state_dict is not None:
             self.network.load_state_dict(state_dict)
-            logger.info('loaded checkpoint state_dict')
+            # logger.info('loaded checkpoint state_dict')
             
     # -------------------------------------------------------------------------------------------
     # -------------------------------------------------------------------------------------------
@@ -177,7 +177,7 @@ class KeyphraseSpanExtraction(object):
             
     @staticmethod
     def load_checkpoint(filename, new_args=None):
-        logger.info('Loading model %s' % filename)
+        # logger.info('Loading model %s' % filename)
         saved_params = torch.load(filename, map_location=lambda storage, loc:storage)
         
         args = saved_params['args']
@@ -187,7 +187,7 @@ class KeyphraseSpanExtraction(object):
             args = override_args(args, new_args)
             
         model = KeyphraseSpanExtraction(args, state_dict)
-        logger.info('success loaded epoch_%d checkpoints ! From : %s' % (epoch, filename))
+        # logger.info('success loaded epoch_%d checkpoints ! From : %s' % (epoch, filename))
         return model, epoch
 
     # -------------------------------------------------------------------------------------------
